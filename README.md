@@ -1,4 +1,4 @@
-# speedcheck
+# speed-demon
 An Apps Script that polls Webpagetest weekly and puts the result into a Google Sheet. If metrics exceed your thresholds, you'll get an email.  A great way to make sure your site doesn't slow down!
 
 This is meant to be used in the Google Sheet at https://goo.gl/SgMfGc.
