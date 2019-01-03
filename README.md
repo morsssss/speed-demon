@@ -22,8 +22,6 @@ That’s it!
 * Replace the API key in cell B1 with your own.
 * Hide that sheet if you'd like.
  
-(Otherwise, you’ll be using my key, and they’re only good for 200 tests per day.  You’re not liable to ever hit this limit, but if everyone shares my key, this will get reached indeed.)
-
 3) Specify your URLs. 
 * In the “URL 1” tab, replace the URL in column B1 with the URL you want tested.
 * If you want to test more URLs, copy the “URL 1” tab.  You can test as many as 10 URLs.  Just make sure that the name of each tab starts with “URL”.
