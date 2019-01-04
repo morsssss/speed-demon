@@ -1,5 +1,5 @@
 /*
- * App Script by Ben Morss, morss@google.com, 2017.  You can share this!
+ * App Script by Ben Morss, @morss, 2017.  You can share this!
  * Reuses bits of Andy Davies' excellent script:
  * Copyright (c) 2013-2014 Andy Davies, @andydavies, http://andydavies.me
  *
@@ -11,6 +11,7 @@
  * C'est tout!
  *
  * v1.1, 8/4/17: support for multiple URLs, each in their own tab
+ * v1.2, 1/3/19: minor fixes, including better handling of blank email addresses
  */
 
 /******************************
@@ -20,7 +21,7 @@
 // Strings
 var ALERT_EMAIL_SUBJECT = 'An alert about your mobile site speed';
 var ALERT_EMAIL_NO_HTML = "Sorry, your email client doesn't support HTML.";
-var ALERT_EMAIL_BCC = 'morss@google.com';
+var ALERT_EMAIL_BCC = '';
  
 // Constants
 var MAX_URLS = 10;                   // the most URLs this spreadsheet will support, limited to save API quota
@@ -140,44 +141,57 @@ function pollForResults() {
 // Get all the URLs the Webpagetest API has given us to check the status of each test.
 // Try each out and see how the test is progressing.
   Logger.log('pollForResults() triggered');
-  var wptTests = getTests();
   
-  for (var i = 0; i < wptTests.length; i++) {
-    var testURL = wptTests[i].url;
-    if (testURL) {
-      var response = UrlFetchApp.fetch(testURL);
-      var json = JSON.parse(response.getContentText());
-
-// Status code 200 means the test is complete.
-// In that case, grab the results and pull out the data points we want.
-// Put that data into the sheet.
-      if (json.statusCode == 200) {
-        var jsonResults = json.data.median.firstView;
-        var wptResultsURL = json.data.summary;
-        Logger.log('test for ' + jsonResults.URL + ' is complete');
-        removeTestFromPendingList(wptTests[i]);
+  try {
+    var wptTests = getTests();
+    
+    for (var i = 0; i < wptTests.length; i++) {
+      var testURL = wptTests[i].url;
+      if (testURL) {
+        var response = UrlFetchApp.fetch(testURL);
+        var json = JSON.parse(response.getContentText());
         
-        wptResults = [];
-        for (var d = 0; d < DATA_POINTS.length; d++)
-          wptResults.push(jsonResults[DATA_POINTS[d].wptName]);
-
-        var trixResults = [[new Date()].concat(wptResults)];
+        // Status code 200 means the test is complete.
+        // In that case, grab the results and pull out the data points we want.
+        // Put that data into the sheet.
+        if (json.statusCode == 200) {
+          var jsonResults = json.data.median.firstView;
+          var wptResultsURL = json.data.summary;
+          Logger.log('test for ' + jsonResults.URL + ' is complete');
+          removeTestFromPendingList(wptTests[i]);
           
-        var sheet = ss.getSheetByName(wptTests[i].sheetName);
-        var range = sheet.getRange(sheet.getLastRow() + 1, 1, 1, numberOfValuesToWrite);
-        range.setValues(trixResults);
-        
-        emailIfPastThresholds(jsonResults.URL, wptResultsURL, wptResults);
-
-      } else {
-        Logger.log('test for ' + json.data.testInfo.url + ' is still pending');
-        resultsStillPending = true;
+          wptResults = [];
+          for (var d = 0; d < DATA_POINTS.length; d++)
+            wptResults.push(Math.round(jsonResults[DATA_POINTS[d].wptName]));
+          
+          var trixResults = [[new Date()].concat(wptResults)];
+          
+          var sheet = ss.getSheetByName(wptTests[i].sheetName);
+          var range = sheet.getRange(sheet.getLastRow() + 1, 1, 1, numberOfValuesToWrite);
+          range.setValues(trixResults);
+          
+          emailIfPastThresholds(jsonResults.URL, wptResultsURL, wptResults);
+          
+        } else {
+          Logger.log('test for ' + json.data.testInfo.url + ' is still pending');
+          resultsStillPending = true;
+        }
       }
+      
+// If we hit an error, cancel the trigger. Log error message and mention it in the sheet.
+// No doubt it would be better if this were more user-friendly!
+      
     }
+  } catch (err) {
+      Logger.log('Error encountered: "' + err.message + '". Canceling trigger and aborting.');
+      var sheet = ss.getSheets()[0];
+      var range = sheet.getRange(sheet.getLastRow() + 1, 1, 1, 2);
+    var trixStuff = [[new Date(), 'Error encountered: ' + err.message + '. Sorry!']];
+      range.setValues(trixStuff);
   }
 
   // If all tests have completed, cancel the trigger
-  if(!resultsStillPending)
+  if (!resultsStillPending)
     cancelTrigger();
 }
 
@@ -189,7 +203,7 @@ function pollForResults() {
  */
 function emailIfPastThresholds(url, wptResultsURL, wptData) { 
   var options = {
-    'name': 'Mobile Site Speed Alerter',
+    'name': 'Speed Demon (mobile site speed alert-bot)',
     'body': ALERT_EMAIL_NO_HTML 
   };
 
@@ -230,6 +244,7 @@ function pastThresholds(wptData, thresholds) {
 
   return offenders;
 }
+
 
 /**
  * Generate email text containing information about the url and the thresholds crossed.
@@ -349,7 +364,7 @@ function isValidURL(url) {
   return pattern.test(url);
 }
 
-
+// let's do a shallow copy of an object!
 function copyObject(old) {
   var ret = {};
   
@@ -359,6 +374,11 @@ function copyObject(old) {
   return ret;
 }
 
+
+// trim a string. (That isn't built into this version of ECMAScript.)
+function trim(str) { Logger.log('in trim(), str is ' + str);
+  return str.replace(/^\s+/, '').replace(/\s+$/, '');
+}
 
 /**
  * Starts a trigger to call pollForResults at a defined interval.
@@ -443,7 +463,7 @@ function getAPIKey() {
 }
 
 /**
- * Get email addresses for alerting from spreadsheet
+ * Get email addresses for alerting from spreadsheet. Omit blank lines.
  */
 function getEmailRecipients() {
   var emails = [];
@@ -451,10 +471,10 @@ function getEmailRecipients() {
   var range = ss.getRangeByName(ALERT_EMAILS);
   var vals = range.getValues();
   for (var i = 0; i < vals.length; i++)
-    if (vals[i].length)
-      emails.push(vals[i]);
-      
-   return emails;
+    if (vals[i][0])
+      emails.push(vals[i][0]);
+
+  return emails;
 }
 
 /**
