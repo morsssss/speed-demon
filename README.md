@@ -34,3 +34,8 @@ That’s it!
 
 
 That’s it!  Enjoy!
+
+## Warning about a warning:
+An Apps Script can now go through a verification process whereby Google ensures it's safe. Since you'll own this script, it won't be verified in this way. So, when you first run it, you'll probably see a scary warning that begins, "This app isn't verified."
+
+You'll simply have to click on the "Advanced" link in that dialog box and tell Google you trust the script. 
