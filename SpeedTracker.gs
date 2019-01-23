@@ -12,6 +12,7 @@
  *
  * v1.1, 8/4/17: support for multiple URLs, each in their own tab
  * v1.2, 1/3/19: minor fixes, including better handling of blank email addresses
+ * v1.3, 1/23/19: added link to full results in WPT
  */
 
 /******************************
@@ -135,7 +136,7 @@ function main() {
 function pollForResults() {
   var resultsStillPending = false;                      // are WPT results still pending?
   var wptResults;
-  var numberOfValuesToWrite = DATA_POINTS.length + 1;   // we're going to write the date too
+  var numberOfValuesToWrite = DATA_POINTS.length + 2;   // we're going to write the date and WPT URL too
   var thresholds = getAlertThresholds();
 
 // Get all the URLs the Webpagetest API has given us to check the status of each test.
@@ -164,7 +165,9 @@ function pollForResults() {
           for (var d = 0; d < DATA_POINTS.length; d++)
             wptResults.push(Math.round(jsonResults[DATA_POINTS[d].wptName]));
           
-          var trixResults = [[new Date()].concat(wptResults)];
+          // Include the date and a link to the Webpagetest results page
+          var wptLink = '=HYPERLINK("' + wptResultsURL + '", "Full results")';
+          var trixResults = [[new Date()].concat(wptResults).concat(wptLink)];
           
           var sheet = ss.getSheetByName(wptTests[i].sheetName);
           var range = sheet.getRange(sheet.getLastRow() + 1, 1, 1, numberOfValuesToWrite);
