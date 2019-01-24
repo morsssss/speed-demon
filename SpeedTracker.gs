@@ -52,7 +52,8 @@ var WPT_PARAMS = {
   'video': 1,                       // need to capture video to calculate SpeedIndex
   'location': 'Dulles:Chrome.3G',
   'mobile': 1,
-  'fvonly': 1                       // we only need the first view
+  'fvonly': 1,                      // we only need the first view
+  'lighthouse': 1
 };
 
 // Map for metrics from Webpagetest.  Each object contains:
@@ -66,7 +67,9 @@ var DATA_POINTS = [
   {wptName: 'fullyLoaded', prettyName: 'time to full page load', units: 'milliseconds'},
   {wptName: 'image_total', prettyName: 'image bytes', units: 'bytes'},
   {wptName: 'image_savings', prettyName: 'bytes that could be saved through image compression', units: 'bytes'},
-  {wptName: 'gzip_savings', prettyName: 'bytes that could be saved through gzip', units: 'bytes'}
+  {wptName: 'gzip_savings', prettyName: 'bytes that could be saved through gzip', units: 'bytes'},
+  {wptName: 'lighthouse.Performance.first-contentful-paint', prettyName: 'First Contentful Paint marks the time at which the first text or image is painted', units: 'milliseconds'}
+  {wptName: 'lighthouse.Performance.interactive', prettyName: 'Time to interactive is the amount of time it takes for the page to become fully interactive', units: 'milliseconds'}
 ];
 
 
